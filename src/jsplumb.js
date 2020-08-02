@@ -1,7 +1,7 @@
 /*
  * This file contains the core code.
  *
- * Copyright (c) 2010 - 2018 jsPlumb (hello@jsplumbtoolkit.com)
+ * Copyright (c) 2010 - 2020 jsPlumb (hello@jsplumbtoolkit.com)
  *
  * https://jsplumbtoolkit.com
  * https://github.com/jsplumb/jsplumb
@@ -495,6 +495,7 @@
             EndpointHoverStyles: [ null, null ],
             HoverPaintStyle: null,
             LabelStyle: { color: "black" },
+            ListStyle: { },
             LogEnabled: false,
             Overlays: [ ],
             MaxConnections: 1,
@@ -718,40 +719,39 @@
             _draw = function (element, ui, timestamp, clearEdits) {
 
                 if (!_suspendDrawing) {
-                    var id = _getId(element),
-                        repaintEls,
-                        dm = _currentInstance.getDragManager();
 
-                    if (dm) {
-                        repaintEls = dm.getElementsForDraggable(id);
-                    }
+                    element = _currentInstance.getElement(element);
 
-                    if (timestamp == null) {
-                        timestamp = _timestamp();
-                    }
+                    if (element != null) {
 
-                    // update the offset of everything _before_ we try to draw anything.
-                    var o = _updateOffset({ elId: id, offset: ui, recalc: false, timestamp: timestamp });
+                        var id = _getId(element),
+                            repaintEls = element.querySelectorAll(".jtk-managed");
 
-                    if (repaintEls && o && o.o) {
-                        for (var i in repaintEls) {
+                        if (timestamp == null) {
+                            timestamp = _timestamp();
+                        }
+
+                        // update the offset of everything _before_ we try to draw anything.
+                        var o = _updateOffset({elId: id, offset: ui, recalc: false, timestamp: timestamp});
+
+                        for (var i = 0; i < repaintEls.length; i++) {
                             _updateOffset({
-                                elId: repaintEls[i].id,
-                                offset: {
-                                    left: o.o.left + repaintEls[i].offset.left,
-                                    top: o.o.top + repaintEls[i].offset.top
-                                },
-                                recalc: false,
+                                elId: repaintEls[i].getAttribute("id"),
+                                // offset: {
+                                //     left: o.o.left + repaintEls[i].offset.left,
+                                //     top: o.o.top + repaintEls[i].offset.top
+                                // },
+                                recalc: true,
                                 timestamp: timestamp
                             });
                         }
-                    }
 
-                    _currentInstance.anchorManager.redraw(id, ui, timestamp, null, clearEdits);
+                        _currentInstance.anchorManager.redraw(id, ui, timestamp, null, clearEdits);
 
-                    if (repaintEls) {
-                        for (var j in repaintEls) {
-                            _currentInstance.anchorManager.redraw(repaintEls[j].id, ui, timestamp, repaintEls[j].offset, clearEdits, true);
+                        if (repaintEls) {
+                            for (var j = 0; j < repaintEls.length; j++) {
+                                _currentInstance.anchorManager.redraw(repaintEls[j].getAttribute("id"), null, timestamp, null, clearEdits, true);
+                            }
                         }
                     }
                 }
@@ -866,12 +866,13 @@
 
 
                 var _addEndpoint = function (el, def, idx) {
-                    return _currentInstance.addEndpoint(el, _mergeOverrides(def, {
+                    var params = _mergeOverrides(def, {
                         anchor: _p.anchors ? _p.anchors[idx] : _p.anchor,
                         endpoint: _p.endpoints ? _p.endpoints[idx] : _p.endpoint,
                         paintStyle: _p.endpointStyles ? _p.endpointStyles[idx] : _p.endpointStyle,
                         hoverPaintStyle: _p.endpointHoverStyles ? _p.endpointHoverStyles[idx] : _p.endpointHoverStyle
-                    }));
+                    });
+                    return _currentInstance.addEndpoint(el, params);
                 };
 
                 // check for makeSource/makeTarget specs.
@@ -887,13 +888,17 @@
                             if (!tep.enabled) {
                                 return false;
                             }
-                            var newEndpoint = tep.endpoint != null && tep.endpoint._jsPlumb ? tep.endpoint : _addEndpoint(_p[type], tep.def, idx);
+
+                            var epDef = jsPlumb.extend({}, tep.def);
+                            delete epDef.label;
+
+                            var newEndpoint = tep.endpoint != null && tep.endpoint._jsPlumb ? tep.endpoint : _addEndpoint(_p[type], epDef, idx);
                             if (newEndpoint.isFull()) {
                                 return false;
                             }
                             _p[type + "Endpoint"] = newEndpoint;
-                            if (!_p.scope && tep.def.scope) {
-                                _p.scope = tep.def.scope;
+                            if (!_p.scope && epDef.scope) {
+                                _p.scope = epDef.scope;
                             } // provide scope if not already provided and endpoint def has one.
                             if (tep.uniqueEndpoint) {
                                 if (!tep.endpoint) {
@@ -977,7 +982,7 @@
                 // connection is new; it has just (possibly) moved. the question is whether
                 // to make that call here or in the anchor manager.  i think perhaps here.
                 if (doInformAnchorManager !== false) {
-                    _currentInstance.anchorManager.newConnection(jpc);
+                    _currentInstance.router.newConnection(jpc);
                 }
 
                 // force a paint
@@ -1004,6 +1009,7 @@
             _newEndpoint = function (params, id) {
                 var endpointFunc = _currentInstance.Defaults.EndpointType || jsPlumb.Endpoint;
                 var _p = jsPlumb.extend({}, params);
+                //delete _p.label; // not supported by endpoint.
                 _p._jsPlumb = _currentInstance;
                 _p.newConnection = _newConnection;
                 _p.newEndpoint = _newEndpoint;
@@ -1211,8 +1217,8 @@
 
                 var id = _getId(p.source), e = _newEndpoint(p, id);
 
-                // ensure element is managed.
-                var myOffset = _manage(id, p.source).info.o;
+                // ensure element is managed. force a recalc if drawing not suspended, to ensure the cached value is fresh
+                var myOffset = _manage(id, p.source, null, !_suspendDrawing).info.o;
                 _ju.addToList(endpointsByElement, id, e);
 
                 if (!_suspendDrawing) {
@@ -1382,11 +1388,11 @@
 
         this.setSource = function (connection, el, doNotRepaint) {
             var p = _set(connection, el, 0, doNotRepaint);
-            this.anchorManager.sourceChanged(p.originalSourceId, p.newSourceId, connection, p.el);
+            this.router.sourceOrTargetChanged(p.originalSourceId, p.newSourceId, connection, p.el, 0);
         };
         this.setTarget = function (connection, el, doNotRepaint) {
             var p = _set(connection, el, 1, doNotRepaint);
-            this.anchorManager.updateOtherEndpoint(p.originalSourceId, p.originalTargetId, p.newTargetId, connection);
+            this.router.sourceOrTargetChanged(p.originalTargetId, p.newTargetId, connection, p.el, 1);
         };
 
         this.deleteEndpoint = function (object, dontUpdateHover, deleteAttachedObjects) {
@@ -1412,7 +1418,7 @@
             endpointsByUUID = {};
             offsets = {};
             offsetTimestamps = {};
-            _currentInstance.anchorManager.reset();
+            _currentInstance.router.reset();
             var dm = _currentInstance.getDragManager();
             if (dm) {
                 dm.reset();
@@ -1441,7 +1447,7 @@
             // always fire this. used by internal jsplumb stuff.
             _currentInstance.fire("internal.connectionDetached", params, originalEvent);
 
-            _currentInstance.anchorManager.connectionDetached(params);
+            _currentInstance.router.connectionDetached(params);
         };
 
         var fireMoveEvent = _currentInstance.fireMoveEvent = function (params, evt) {
@@ -1481,7 +1487,7 @@
          * @method deleteConnection
          * @param connection Connection to delete
          * @param {Object} [params] Optional delete parameters
-         * @param {Boolean} [params.doNotFireEvent=false] If true, a connection detached event will not be fired. Otherwise one will.
+         * @param {Boolean} [params.fireEvent=true] If false, a connection detached event will not be fired. Otherwise one will.
          * @param {Boolean} [params.force=false] If true, the connection will be deleted even if a beforeDetach interceptor tries to stop the deletion.
          * @returns {Boolean} True if the connection was deleted, false otherwise.
          */
@@ -1928,7 +1934,7 @@
 
         // check if a given element is managed or not. if not, add to our map. if drawing is not suspended then
         // we'll also stash its dimensions; otherwise we'll do this in a lazy way through updateOffset.
-        var _manage = _currentInstance.manage = function (id, element, _transient) {
+        var _manage = _currentInstance.manage = function (id, element, _transient, _recalc) {
             if (!managedElements[id]) {
                 managedElements[id] = {
                     el: element,
@@ -1941,6 +1947,10 @@
 
                 if (!_transient) {
                     _currentInstance.fire("manageElement", { id:id, info:managedElements[id].info, el:element });
+                }
+            } else {
+                if (_recalc) {
+                    managedElements[id].info = _updateOffset({ elId: id, timestamp: _suspendedAt, recalc:true });
                 }
             }
 
@@ -2015,7 +2025,8 @@
         this.init = function () {
             if (!initialized) {
                 _getContainerFromDefaults();
-                _currentInstance.anchorManager = new root.jsPlumb.AnchorManager({jsPlumbInstance: _currentInstance});
+                _currentInstance.router = new root.jsPlumb.DefaultRouter(_currentInstance);
+                _currentInstance.anchorManager = _currentInstance.router.anchorManager;
                 initialized = true;
                 _currentInstance.fire("ready", _currentInstance);
             }
@@ -2433,6 +2444,8 @@
                             return;
                         }
 
+                        elid = this.getId(this.getElement(elInfo.el)); // elid might have changed since this method was called to configure the element.
+
                         // TODO store def on element.
                         var def = this.sourceEndpointDefinitions[elid][type];
 
@@ -2440,8 +2453,6 @@
                         if (!def.enabled) {
                             return;
                         }
-
-                        elid = this.getId(this.getElement(elInfo.el)); // elid might have changed since this method was called to configure the element.
 
                         // if a filter was given, run it, and return if it says no.
                         if (p.filter) {
@@ -2829,8 +2840,7 @@
                 if (dm) {
                     dm.elementRemoved(_info.id);
                 }
-                _currentInstance.anchorManager.clearFor(_info.id);
-                _currentInstance.anchorManager.removeFloatingConnection(_info.id);
+                _currentInstance.router.elementRemoved(_info.id);
 
                 if (_currentInstance.isSource(_info.el)) {
                     _currentInstance.unmakeSource(_info.el);
@@ -2866,7 +2876,7 @@
          */
         this.remove = function (el, doNotRepaint) {
             var info = _info(el), affectedElements = [];
-            if (info.text) {
+            if (info.text && info.el.parentNode) {
                 info.el.parentNode.removeChild(info.el);
             }
             else if (info.id) {
@@ -3000,7 +3010,7 @@
             this.targetEndpointDefinitions[newId] = this.targetEndpointDefinitions[id];
             delete this.targetEndpointDefinitions[id];
 
-            this.anchorManager.changeId(id, newId);
+            this.router.changeId(id, newId);
             var dm = this.getDragManager();
             if (dm) {
                 dm.changeId(id, newId);
@@ -3090,7 +3100,7 @@
             return floatingConnections[id];
         };
 
-        this.listManager = new root.jsPlumbListManager(this);
+        this.listManager = new root.jsPlumbListManager(this, this.Defaults.ListStyle);
     };
 
     _ju.extend(root.jsPlumbInstance, _ju.EventGenerator, {
@@ -3206,14 +3216,10 @@
 
             // and advise the anchor manager
             if (index === 0) {
-                // TODO why are there two differently named methods? Why is there not one method that says "some end of this
-                // connection changed (you give the index), and here's the new element and element id."
-                this.anchorManager.sourceChanged(originalElementId, proxyElId, connection, proxyEl);
+                this.router.sourceOrTargetChanged(originalElementId, proxyElId, connection, proxyEl, 0);
             }
             else {
-                this.anchorManager.updateOtherEndpoint(connection.endpoints[0].elementId, originalElementId, proxyElId, connection);
-                connection.target = proxyEl;
-                connection.targetId = proxyElId;
+                this.router.sourceOrTargetChanged(originalElementId, proxyElId, connection, proxyEl, 1);
             }
 
             // detach the original EP from the connection.
@@ -3243,12 +3249,10 @@
             if (index === 0) {
                 // TODO why are there two differently named methods? Why is there not one method that says "some end of this
                 // connection changed (you give the index), and here's the new element and element id."
-                this.anchorManager.sourceChanged(proxyElId, originalElementId, connection, originalElement);
+                this.router.sourceOrTargetChanged(proxyElId, originalElementId, connection, originalElement, 0);
             }
             else {
-                this.anchorManager.updateOtherEndpoint(connection.endpoints[0].elementId, proxyElId, originalElementId, connection);
-                connection.target = originalElement;
-                connection.targetId = originalElementId;
+                this.router.sourceOrTargetChanged(proxyElId, originalElementId, connection, originalElement, 1);
             }
 
             // detach the proxy EP from the connection (which will cause it to be removed as we no longer need it)

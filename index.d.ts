@@ -85,9 +85,9 @@ declare module jsPlumb {
 
         fire(event: string, value: Object, originalEvent: Event): void;
 
-        getAllConnections(): Object;
+        getAllConnections(): Array<Connection>;
 
-        getConnections(scope: string, options: Object, scope2?: string | string, source?: string | string | Selector, target?: string | string | Selector, flat?: boolean/* =false */): Array<any> | Map<any, any>;
+        getConnections(scope: string, options: Object, scope2?: string | string, source?: string | string | Selector, target?: string | string | Selector, flat?: boolean/* =false */): Array<any> | Record<any, any>;
 
         getContainer(): Element;
 
@@ -106,6 +106,8 @@ declare module jsPlumb {
         getTargetScope(element: Element | string): string;
 
         getType(id: string, typeDescriptor: string): Object;
+
+        getZoom(): number;
 
         hide(el: string | Element | Selector, changeEndpoints?: boolean/* =false */): jsPlumbInstance;
 
@@ -195,6 +197,8 @@ declare module jsPlumb {
 
         setTargetScope(el: Element | string, scope: string, connectionType?: string): void;
 
+        setZoom(val: number, repaintEverything?: boolean/* =false */): boolean;
+
         show(el: string | Element | Selector, changeEndpoints?: boolean/* =false */): jsPlumbInstance;
 
         toggleDraggable(el: string | Element | Selector): boolean;
@@ -277,6 +281,8 @@ declare module jsPlumb {
         label?: string;
         connector?: ConnectorSpec;
         overlays?:Array<OverlaySpec>;
+        cssClass?: string;
+        parameters?: Record<string, any>;
     }
 
     interface DragEventCallbackOptions {
@@ -299,17 +305,29 @@ declare module jsPlumb {
         hoverClass: string;
     }
 
-    interface Connection {
+    interface UIComponent {
+        getParameter:(name:string) => any;
+        setParameter:(name: string, value: any) => void;
+        getParameters:() => Record<string, any>;
+        setParameters:(parameters:Record<string, any>) => void;
+    }
+
+    interface Connection extends UIComponent {
         id: ConnectionId;
         setDetachable(detachable: boolean): void;
-        setParameter(name: string, value: any): void;
         endpoints: [Endpoint, Endpoint];
+        getLabelOverlay(): Overlay;
+        getOverlays(): Object;
         getOverlay(s: string): Overlay;
         showOverlay(s: string): void;
         hideOverlay(s: string): void;
         setLabel(s: string): void;
         getElement(): Connection;
         repaint():void;
+        source: Element;
+        target: Element;
+        sourceId: string;
+        targetId: string;
     }
 
 
@@ -324,13 +342,26 @@ declare module jsPlumb {
 
     /* -------------------------------------------- ENDPOINTS ------------------------------------------------------ */
 
-    type EndpointId = "Rectangle" | "Dot" | "Blank" | UserDefinedEndpointId;
-    type UserDefinedEndpointId = string;
-    type EndpointSpec = EndpointId | [EndpointId, EndpointOptions];
+    type EndpointSpec = EndpointId |
+                        [ EndpointRectangle, EndpointRectangleOptions ] |
+                        [ EndpointDot, EndpointDotOptions ] |
+                        [ EndpointBlank, EndpointBlankOptions ]
+    ;
+
+    type EndpointId = EndpointRectangle | EndpointDot | EndpointBlank;
+    type EndpointRectangle = "Rectangle";
+    type EndpointDot = "Dot";
+    type EndpointBlank = "Blank";
+
+    type EndpointDotOptions = { radius?: number, cssClass?: string, hoverClass?: string };
+    type EndpointRectangleOptions = { width?: number, height?: number, cssClass?: string, hoverClass?: string};
+    type EndpointImageOptions = { src: string, cssClass?: string, hoverClass?: string };
+    type EndpointBlankOptions = {};
+
 
     interface EndpointOptions {
         anchor?: AnchorSpec;
-        endpoint?: Endpoint;
+        endpoint?: EndpointSpec;
         enabled?: boolean;//= true
         paintStyle?: PaintStyle;
         hoverPaintStyle?: PaintStyle;
@@ -349,17 +380,19 @@ declare module jsPlumb {
         isSource?: boolean;//= false
         isTarget?: boolean;//= false
         reattach?: boolean;//= false
-        parameters: object;
+        parameters?: Record<string, any>;
         "connector-pointer-events"?: string;
         connectionType?: string;
         dragProxy?: string | Array<string>;
-        id: string;
-        scope: string;
-        reattachConnections: boolean;
-        type: string; // "Dot", etc.
+        id?: string;
+        scope?: string;
+        reattachConnections?: boolean;
+        type?: string; // "Dot", etc.
+        overlays?:Array<OverlaySpec>;
+        uuid?:string;
     }
 
-    class Endpoint {
+    interface Endpoint extends UIComponent {
         anchor: Anchor;
         connections?: Array<Connection>;
         maxConnections: number;//= 1?
@@ -390,9 +423,6 @@ declare module jsPlumb {
 
     /* -------------------------------------------- ANCHORS -------------------------------------------------------- */
 
-    interface AnchorOptions {
-    }
-
     type AnchorOrientationHint = -1 | 0 | 1;
 
     interface Anchor {
@@ -407,32 +437,74 @@ declare module jsPlumb {
         y: number;
     }
 
+    type AnchorDynamicSpec = Array<
+         AnchorStaticSpec |
+         AnchorDynamicId |
+         AnchorPerimeterSpec |
+         AnchorContinuousSpec
+    >;
+
+    type AnchorDynamicId = "AutoDefault";
+
     type AnchorId =
+        AnchorStaticId |
+        AnchorDynamicId |
+        AnchorPerimeterId |
+        AnchorContinuousId
+    ;
+
+    type AnchorStaticSpec = AnchorStaticId | AnchorArraySpec;
+
+    type AnchorStaticId =
         "Assign" |
-        "AutoDefault" |
         "Bottom" |
         "BottomCenter" |
         "BottomLeft" |
         "BottomRight" |
         "Center" |
-        "Continuous" |
-        "ContinuousBottom" |
-        "ContinuousLeft" |
-        "ContinuousRight" |
-        "ContinuousTop" |
         "Left" |
         "LeftMiddle" |
-        "Perimeter" |
         "Right" |
         "RightMiddle" |
         "Top" |
         "TopCenter" |
         "TopLeft" |
-        "TopRight";
+        "TopRight"
+    ;
 
+    type AnchorArraySpec = [ number, number, number, number, number?, number?, string? ];
 
-    type AnchorSpec = AnchorId | [AnchorId, AnchorOptions]
+    type AnchorPerimeterSpec = AnchorPerimeterId | [ AnchorPerimeterId, { shape?: PerimeterShape, anchorCount?: number, rotation?: number } ]
 
+    type AnchorPerimeterId = "Perimeter";
+
+    type PerimeterShape =
+        "Circle" |
+        "Ellipse" |
+        "Triangle" |
+        "Diamond" |
+        "Rectangle" |
+        "Square"
+    ;
+
+    type AnchorContinuousSpec = AnchorContinuousId | [ AnchorContinuousId, { faces?: [ ContinuousAnchorFace ] } ]
+
+    type AnchorContinuousId =
+        "Continuous" |
+        "ContinuousBottom" |
+        "ContinuousLeft" |
+        "ContinuousRight" |
+        "ContinuousTop"
+    ;
+
+    type ContinuousAnchorFace = "top" | "left" | "right" | "bottom";
+
+    type AnchorSpec =
+         AnchorStaticSpec |
+         AnchorDynamicSpec |
+         AnchorPerimeterSpec |
+         AnchorContinuousSpec
+    ;
 
     /* --------------------------------------- OVERLAYS ------------------------------------------------------------- */
 

@@ -1,3 +1,168 @@
+## 2.14.5
+
+July 27th 2020
+
+- Further updates to type defs for Connection and Endpoint - added setParameter/setParameters/getParameter/getParameters
+
+## 2.14.4
+
+July 27th 2020
+
+- change `parameters` to `Record<string, any>` in `EndpointOptions` in type definitions
+- add `parameters` to `ConnectParams` in type definitions
+
+## 2.14.3
+
+July 14th 2020
+
+- Backed out the change from 2.14.0 that dispensed with taking overlay placements/stroke width into account. In some cases browsers were choosing spurious values for stroke width with this setup.
+
+## 2.14.2
+
+July 12th 2020
+
+- Always use width/height of at least 1 pixel in SVG element. This is a proper fix for the issue from 2.14.0; don't use 2.14.1.
+
+## 2.14.1
+
+July 12th 2020
+
+- Fixed issue with SVG elements sometimes being assigned height/width of 0, in which case overflow is ignored.
+
+## 2.14.0
+
+July 11th 2020
+
+### Breaking
+
+- Refactored connection paint code to not take overlay placements or stroke width of connector into account when computing SVG bounds.  The `.jtk-connector` class in the `jsplumbtoolkit-defaults.css` file now has `overflow:visible`, which covers this. If you are upgrading from a prior version you should ensure this style is applied to your `.jtk-connector` elements.
+
+### Non-breaking
+
+- `doNotFireEvent` parameter in `deleteConnection` js doc switched to `fireEvent` (issue 932)
+- Internal refactoring of paint code to introduce the concept of a "router". No functional change.
+
+## 2.13.4
+
+July 9th 2020
+
+- Added missing `uuid` option to `EndpointOptions` in types. No change to the code.
+
+## 2.13.3
+
+Jun 16th 2020
+
+- Minor changes to demonstrations. No change to the library.
+
+## 2.13.2
+
+May 1st 2020
+
+- when adding new endpoint and drawing is not suspended, ensure offset/size is always updated. 
+
+## 2.13.1
+
+April 12th 2020
+
+- fix issue #924 - connections for nested child elements not recognised when parent added to a group.
+- Support `ListStyle` default, for specifying endpoint/anchor of `jtk-scrollable-list` elements.
+
+## 2.13.0
+
+March 20th 2020
+
+- upgrade to Mottle 1.0.1
+
+## 2.12.14
+
+March 2nd 2020
+
+- faster `uuid` method implementation
+- faster bezier curve length method
+- issue #914 and #913 part 2
+
+## 2.12.13
+
+February 29th 2020
+
+- fix issue 913 - arrow overlays disappearing when changing types
+
+## 2.12.12
+
+February 29th 2020
+
+- fix issue 912 - change of element ID not recognised by makeSource when user drags with mouse.
+
+## 2.12.11
+
+February 28th 2020
+
+- fix duplicated types.
+
+## 2.12.10
+
+February 27th 2020
+
+- updates to groups code to handle correctly hiding connections between elements that are not direct children of the group
+- several typings changes, one of which was partly duplicated, causing this version to not be something you should install.
+
+## 2.12.9
+
+January 30th 2020
+
+- redraw child elements on group drag (fixes issue with group members that have associated connections that are on descendants of the child element, not the child element itself)
+- add setZoom/getZoom to Typescript definitions file. 
+
+## 2.12.8
+
+December 11th 2019
+
+- fixes for the sort functions used to sort edges by the continuous anchors (#893, #892, #891, #890).
+
+## 2.12.7
+
+November 28th 2019
+
+- remove the ability to add nodes that are inside a group to the current drag selection.
+- when a node is added to a group, it is removed from the current drag selection.
+
+## 2.12.6
+
+November 18th 2019
+
+- update groups code to correctly orphan/prune multiple dragged elements
+
+## 2.12.5
+
+October 29th 2019
+
+- fix issue #861, error on droppable.
+
+## 2.12.4
+
+October 27th 2019
+
+- minor updates to endpoint label handling
+- update `remove` method to test for parent node existence before attempting removal.
+
+## 2.12.3
+
+October 20th 2019
+
+- ensure `label` from connection type is not presented to endpoint.
+
+## 2.12.2
+
+October 20th 2019
+
+- minor update to the return value of the internal method used to find the point on a Bezier connector closest to some point in the viewport. 
+
+## 2.12.1
+
+October 19th 2019
+
+- minor update to the return value of the internal method used to find the point on a connector closest to some point in the viewport.
+
 ## 2.12.0
 
 September 23rd 2019

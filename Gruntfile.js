@@ -12,7 +12,7 @@ var package = require('./package.json'),
     },
     objects = {
         common:[
-            'util.js', 'browser-util.js', 'lists.js', 'jsplumb.js', 'overlay-component.js', 'endpoint.js', 'connection.js', 'anchors.js', 'defaults.js', 'group.js'
+            'util.js', 'browser-util.js', 'lists.js', 'jsplumb.js', 'overlay-component.js', 'endpoint.js', 'connection.js', 'anchors.js', 'router.js', 'defaults.js', 'group.js'
         ]
     },
     optionList = function(grunt, type) {
@@ -217,7 +217,7 @@ module.exports = function(grunt) {
     });
 
 
-    grunt.registerTask("build", [ 'build-src', 'exec:npmpack', 'build-docs' ]);
+    grunt.registerTask("build", [ 'build-src', 'exec:npmpack'/*, 'build-docs'*/ ]);
     grunt.registerTask('build-src', ['clean', 'jshint', 'concat', 'uglify', 'insertVersion' ]);
     grunt.registerTask('default', ['help']);
     grunt.registerTask('build-docs', ['clean:docs', 'docs', 'jekyll', 'finaliseDocs', 'copy:docs', 'copy:docs_js','copy:docs_css','copy:docs_img']);

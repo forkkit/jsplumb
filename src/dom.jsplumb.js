@@ -1,7 +1,7 @@
 /*
  * This file contains code used when jsPlumb is being rendered in a DOM.
  *
- * Copyright (c) 2010 - 2019 jsPlumb (hello@jsplumbtoolkit.com)
+ * Copyright (c) 2010 - 2020 jsPlumb (hello@jsplumbtoolkit.com)
  *
  * https://jsplumbtoolkit.com
  * https://github.com/jsplumb/jsplumb
@@ -111,7 +111,9 @@
                 this.draw(_e[2].el, uip);
             }
 
-            delete _e[0]._jsPlumbDragOptions._dragging;
+            if (_e[0]._jsPlumbDragOptions != null) {
+                delete _e[0]._jsPlumbDragOptions._dragging;
+            }
 
             this.removeClass(_e[0], "jtk-dragged");
             this.select({source: _e[2].el}).removeClass(this.elementDraggingClass + " " + this.sourceElementDraggingClass, true);
@@ -1022,10 +1024,16 @@
             }
         },
         addToDragSelection: function (spec) {
-            _getDragManager(this).select(spec);
+            var el = this.getElement(spec);
+            if (el != null && (el._isJsPlumbGroup || el._jsPlumbGroup == null)) {
+                _getDragManager(this).select(spec);
+            }
         },
         removeFromDragSelection: function (spec) {
             _getDragManager(this).deselect(spec);
+        },
+        getDragSelection:function() {
+            return _getDragManager(this).getSelection();
         },
         clearDragSelection: function () {
             _getDragManager(this).deselectAll();

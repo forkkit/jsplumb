@@ -194,116 +194,18 @@ var testSuite = function (_jsPlumb) {
         equal(_jsPlumb.selectEndpoints({element: "output"}).length, 0, "no endpoints registered for in1");
     });
 
-    test(': draggable in nested element does not cause extra ids to be created', function () {
-        var d = support.addDiv("d1");
-        var d2 = document.createElement("div");
-        d2.setAttribute("foo", "ff");
-        d.appendChild(d2);
-        var d3 = document.createElement("div");
-        d2.appendChild(d3);
-        ok(d2.getAttribute("id") == null, "no id on d2");
-        _jsPlumb.draggable(d);
-        _jsPlumb.addEndpoint(d3);
-        ok(d2.getAttribute("id") == null, "no id on d2");
-        ok(d3.getAttribute("id") != null, "id on d3");
-    });
+    test(' jsPlumb.connect an endpoint to a div.', function () {
 
-    test(" : draggable, reference elements returned correctly", function () {
-        var d = support.addDiv("d1");
-        var d2 = document.createElement("div");
-        d2.setAttribute("foo", "ff");
-        d.appendChild(d2);
-        var d3 = document.createElement("div");
-        d3.setAttribute("id", "d3");
-        d2.appendChild(d3);
-        _jsPlumb.draggable(d);
-        _jsPlumb.addEndpoint(d3);
-        _jsPlumb.draggable(d3);
-        // now check ref ids for element d1
-        var els = _jsPlumb.dragManager.getElementsForDraggable("d1");
-        ok(!jsPlumbUtil.isEmpty(els), "there is one sub-element for d1");
-        ok(els["d3"] != null, "d3 registered");
+        var d1 = support.addDiv("d1");
+        var d2 = support.addDiv("d2");
+        var e1 = _jsPlumb.addEndpoint(d2);
+
+        _jsPlumb.connect({source: e1, target: d1});
+
+        equal(_jsPlumb.select().length, 1, "one connection established");
     });
 
 
-    test(" : draggable + setParent, reference elements returned correctly", function () {
-        var d = support.addDiv("d1");
-        var d2 = document.createElement("div");
-        d2.setAttribute("foo", "ff");
-        d.appendChild(d2);
-        var d3 = document.createElement("div");
-        d3.setAttribute("id", "d3");
-        d2.appendChild(d3);
-        _jsPlumb.draggable(d);
-        _jsPlumb.addEndpoint(d3);
-        _jsPlumb.draggable(d3);
-        // create some other new parent
-        var d12 = support.addDiv("d12");
-        // and move d3
-        _jsPlumb.setParent(d3, d12);
-
-        // now check ref ids for element d1
-        var els = _jsPlumb.dragManager.getElementsForDraggable("d1");
-        ok(jsPlumbUtil.isEmpty(els), "there are no sub-elements for d1");
-        var els12 = _jsPlumb.dragManager.getElementsForDraggable("d12");
-        ok(!jsPlumbUtil.isEmpty(els12), "there is one sub-element for d12");
-        ok(els12["d3"] != null, "d3 registered");
-    });
-
-test("drag multiple elements and ensure their connections are painted correctly at the end", function() {
-
-        var d1 = support.addDraggableDiv ('d1', null, null,50, 50, 100, 100);
-        var d2 = support.addDraggableDiv ('d2', null, null,250, 250, 100, 100);
-        var d3 = support.addDraggableDiv ('d3', null, null,500, 500, 100, 100);
-
-        var e1 = _jsPlumb.addEndpoint(d1, {
-            anchor:"TopLeft"
-        });
-        var e2 = _jsPlumb.addEndpoint(d2, {
-            anchor:"TopLeft",
-            maxConnections:-1
-        });
-        var e3 = _jsPlumb.addEndpoint(d3, {
-            anchor:"TopLeft"
-        });
-
-        _jsPlumb.connect({source:e1, target:e2});
-        _jsPlumb.connect({source:e2, target:e3});
-
-        equal(e1.canvas.offsetLeft, 50 - (e1.canvas.offsetWidth/2), "endpoint 1 is at the right place");
-        equal(e1.canvas.offsetTop, 50 - (e1.canvas.offsetHeight/2), "endpoint 1 is at the right place");
-        equal(e2.canvas.offsetLeft, 250 - (e2.canvas.offsetWidth/2), "endpoint 2 is at the right place");
-        equal(e2.canvas.offsetTop, 250 - (e2.canvas.offsetHeight/2), "endpoint 2 is at the right place");
-        equal(e3.canvas.offsetLeft, 500 - (e3.canvas.offsetWidth/2), "endpoint 3 is at the right place");
-        equal(e3.canvas.offsetTop, 500 - (e3.canvas.offsetHeight/2), "endpoint 3 is at the right place");
-
-        _jsPlumb.addToDragSelection("d1");
-        _jsPlumb.addToDragSelection("d3");
-
-        // drag node 2 by 750,750. we expect its endpoint to have moved too
-
-        support.dragNodeTo(d2, 1000, 1000);
-
-        equal(d2.offsetLeft, 950, "div 2 is at the right left position");
-        equal(d2.offsetTop, 950, "div 2 is at the right top position");
-
-        // divs 1 and 3 have moved too, make sure they are in the right place
-        equal(d1.offsetLeft, 750, "div 1 is at the right left position");
-        equal(d1.offsetTop, 750, "div 1 is at the right top position");
-        equal(d3.offsetLeft, 1200, "div 3 is at the right left position");
-        equal(d3.offsetTop, 1200, "div 3 is at the right top position");
-
-        // check the endpoints
-        equal(e2.canvas.offsetLeft, 950 - (e2.canvas.offsetWidth/2), "endpoint 2 is at the right place");
-        equal(e2.canvas.offsetTop, 950 - (e2.canvas.offsetHeight/2), "endpoint 2 is at the right place");
-
-        equal(e1.canvas.offsetLeft, 750 - (e1.canvas.offsetWidth/2), "endpoint 1 is at the right place");
-        equal(e1.canvas.offsetTop, 750 - (e1.canvas.offsetHeight/2), "endpoint 1 is at the right place");
-
-        equal(e3.canvas.offsetLeft, 1200 - (e3.canvas.offsetWidth/2), "endpoint 3 is at the right place");
-        equal(e3.canvas.offsetTop, 1200 - (e3.canvas.offsetHeight/2), "endpoint 3 is at the right place");
-
-    });
 
     test(": lineWidth specified as string (eew)", function () {
         var d1 = support.addDiv("d1"), d2 = support.addDiv("d2");
@@ -4652,6 +4554,114 @@ test("drag multiple elements and ensure their connections are painted correctly 
 
     });
 
+    test(" setId, taking two strings, testing makeSource/makeTarget with the mouse", function () {
+        var d1 = support.addDiv("d1");
+        var d2 = support.addDiv("d2");
+
+        // setup d1 as a source
+        _jsPlumb.makeSource("d1", {
+            endpoint:"Rectangle",
+            parameters:{
+                foo:"foo"
+            }
+        });
+        // and d2 as a target
+        _jsPlumb.makeTarget("d2", {
+            endpoint:"Rectangle"
+        });
+
+        support.dragConnection(d1, d2);
+
+        equal(1, _jsPlumb.select().length, "1 connection in instance.");
+
+        // now change the id of d1 and connect the new id, and check again that the source endpoint is Rectangle
+        _jsPlumb.setId("d1", "foo");
+
+        support.dragConnection(d1, d2);
+
+        equal(2, _jsPlumb.select().length, "2 connections in instance.");
+
+        _jsPlumb.setId("d2", "bar");
+
+        support.dragConnection(d1, d2);
+
+        equal(3, _jsPlumb.select().length, "3 connections in instance.");
+
+    });
+
+    test(" setId, taking an element and a string, testing makeSource/makeTarget with the mouse", function () {
+        var d1 = support.addDiv("d1");
+        var d2 = support.addDiv("d2");
+
+        // setup d1 as a source
+        _jsPlumb.makeSource("d1", {
+            endpoint:"Rectangle",
+            parameters:{
+                foo:"foo"
+            }
+        });
+        // and d2 as a target
+        _jsPlumb.makeTarget("d2", {
+            endpoint:"Rectangle"
+        });
+
+        support.dragConnection(d1, d2);
+
+        equal(1, _jsPlumb.select().length, "1 connection in instance.");
+
+        // now change the id of d1 and connect the new id, and check again that the source endpoint is Rectangle
+        _jsPlumb.setId(d1, "foo");
+
+        support.dragConnection(d1, d2);
+
+        equal(2, _jsPlumb.select().length, "2 connections in instance.");
+
+        _jsPlumb.setId(d2, "bar");
+
+        support.dragConnection(d1, d2);
+
+        equal(3, _jsPlumb.select().length, "3 connections in instance.");
+
+    });
+
+    test(" setIdChanged testing makeSource/makeTarget with the mouse", function () {
+        var d1 = support.addDiv("d1");
+        var d2 = support.addDiv("d2");
+
+        // setup d1 as a source
+        _jsPlumb.makeSource("d1", {
+            endpoint:"Rectangle",
+            parameters:{
+                foo:"foo"
+            }
+        });
+        // and d2 as a target
+        _jsPlumb.makeTarget("d2", {
+            endpoint:"Rectangle"
+        });
+
+        support.dragConnection(d1, d2);
+
+        equal(1, _jsPlumb.select().length, "1 connection in instance.");
+
+        // now change the id of d1 and connect the new id, and check again that the source endpoint is Rectangle
+        d1.setAttribute("id", "foo");
+        _jsPlumb.setIdChanged("d1", "foo");
+
+        support.dragConnection(d1, d2);
+
+        equal(2, _jsPlumb.select().length, "2 connections in instance.");
+
+        d2.setAttribute("id", "bar");
+        _jsPlumb.setIdChanged("d2", "bar");
+
+        support.dragConnection(d1, d2);
+
+        equal(3, _jsPlumb.select().length, "3 connections in instance.");
+
+    });
+
+
     test(" endpoint hide/show should hide/show overlays", function () {
         support.addDiv("d1");
         var e1 = _jsPlumb.addEndpoint("d1", {
@@ -6486,6 +6496,33 @@ test("drag multiple elements and ensure their connections are painted correctly 
         var o3 = connection3.addOverlay(['Label', {label:"second label", labelLocationAttribute:"theattribute"}]);
         equal(0.1, o3.loc, "label is at location of 0.1, which is the value of an attribute whose name was specified in the addOverlay call, and whose value is in the connection data");
 
+    });
+
+    test("connection.replaceEndpoint", function() {
+        var d1 = support.addDiv("d1"), d2 = support.addDiv("d2"),
+            e1 = _jsPlumb.addEndpoint(d1, {
+                endpoint:[ "Dot", { radius:15 } ]
+            }),
+            e2 = _jsPlumb.addEndpoint(d2, {
+                endpoint:[ "Dot", { radius:25 } ]
+            }),
+            c = _jsPlumb.connect({source:e1, target:e2});
+
+        equal(15, c.endpoints[0].endpoint.radius, "endpoint 1 has radius 15");
+        equal(25, c.endpoints[1].endpoint.radius, "endpoint 2 has radius 25");
+
+        equal("Dot", c.endpoints[0].endpoint.type, "endpoint 1 is a Dot");
+        equal("Dot", c.endpoints[1].endpoint.type, "endpoint 2 is a Dot");
+
+        c.replaceEndpoint(0, [ "Rectangle", {width:50,height:50}]);
+        c.replaceEndpoint(1, [ "Dot", {radius:100}]);
+
+        equal(50, c.endpoints[0].endpoint.width, "endpoint 1 now has width 50");
+        equal(50, c.endpoints[0].endpoint.height, "endpoint 1 now has height 50");
+        equal(100, c.endpoints[1].endpoint.radius, "endpoint 2 now has radius 100");
+
+        equal("Rectangle", c.endpoints[0].endpoint.type, "endpoint 1 is now a Rectangle");
+        equal("Dot", c.endpoints[1].endpoint.type, "endpoint 2 is now a Dot");
     });
 
 };

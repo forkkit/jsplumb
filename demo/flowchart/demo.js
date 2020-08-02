@@ -28,16 +28,6 @@ jsPlumb.ready(function () {
         Container: "canvas"
     });
 
-    var basicType = {
-        connector: "StateMachine",
-        paintStyle: { stroke: "red", strokeWidth: 4 },
-        hoverPaintStyle: { stroke: "blue" },
-        overlays: [
-            "Arrow"
-        ]
-    };
-    instance.registerConnectionType("basic", basicType);
-
     // this is the paint style for the connecting lines..
     var connectorPaintStyle = {
             strokeWidth: 2,
@@ -77,7 +67,7 @@ jsPlumb.ready(function () {
                     location: [0.5, 1.5],
                     label: "Drag",
                     cssClass: "endpointSourceLabel",
-                    visible:false
+                    visible:true
                 } ]
             ]
         },
@@ -90,7 +80,7 @@ jsPlumb.ready(function () {
             dropOptions: { hoverClass: "hover", activeClass: "active" },
             isTarget: true,
             overlays: [
-                [ "Label", { location: [0.5, -0.5], label: "Drop", cssClass: "endpointTargetLabel", visible:false } ]
+                [ "Label", { location: [0.5, -0.5], label: "Drop", cssClass: "endpointTargetLabel", visible:true } ]
             ]
         },
         init = function (connection) {
@@ -142,9 +132,9 @@ jsPlumb.ready(function () {
         // listen for clicks on connections, and offer to delete connections on click.
         //
         instance.bind("click", function (conn, originalEvent) {
-           // if (confirm("Delete connection from " + conn.sourceId + " to " + conn.targetId + "?"))
-             //   instance.detach(conn);
-            conn.toggleType("basic");
+           if (confirm("Delete connection from " + conn.sourceId + " to " + conn.targetId + "?")) {
+               instance.deleteConnection(conn);
+           }
         });
 
         instance.bind("connectionDrag", function (connection) {

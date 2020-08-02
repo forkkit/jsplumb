@@ -1,5 +1,5 @@
 /*
- * 2010 - 2018 jsPlumb (hello@jsplumbtoolkit.com)
+ * Copyright (c) 2010 - 2020 jsPlumb (hello@jsplumbtoolkit.com)
  *
  * https://jsplumbtoolkit.com
  * https://github.com/jsplumb/jsplumb
@@ -92,6 +92,8 @@
                     // maybe update from data, if there were parameterised values for instance.
                     existing.updateFrom(t.overlays[i][1]);
                     keep[t.overlays[i][1].id] = true;
+
+                    existing.reattach(component._jsPlumb.instance, component);
                 }
                 else {
                     var c = component.getCachedTypeItem("overlay", t.overlays[i][1].id);
